@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "smart-transit",
+    "slug": "smart-transit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/Main-logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsImpl": "mapbox",
+          "ios": {
+            "accessToken": "sk.eyJ1Ijoic21hcnQxOTkiLCJhIjoiY202NWI3c2ZnMXN6djJqc28zcWY4NG5rdSJ9.mgxBFccJ3op6XUWKsMyGhA"
+          },
+          "android": {
+            "accessToken": "sk.eyJ1Ijoic21hcnQxOTkiLCJhIjoiY202NWI3c2ZnMXN6djJqc28zcWY4NG5rdSJ9.mgxBFccJ3op6XUWKsMyGhA"
+          }
+        }
+      ],
+      "expo-build-properties"
+    ]
+  }
+}
