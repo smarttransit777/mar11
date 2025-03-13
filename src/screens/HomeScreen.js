@@ -287,56 +287,83 @@ const HomeScreen = ({ navigation }) => {
     };
 
     useEffect(() => {
-    if (locationDetails && userLocation && buses.length > 0) {
-        const calculateDistanceAndETA = (bus) => {
-            const distance = getDistance(bus.current_location, userLocation);
-            let eta = null;
-
-            if (distance !== null) {
-                if (distance <= 0.1) {
-                    eta = "Arrived";
-                } else if (distance > 0.1 && distance <= 1) {
-                    eta = "2 mins";
+        if (locationDetails && userLocation && buses.length > 0) {
+            const calculateDistanceAndETA = (bus) => {
+                const distance = getDistance(bus.current_location, userLocation);
+                let eta = null;
+    
+                if (distance !== null) {
+                    if (distance <= 0.1) {
+                        eta = "Arrived";
+                    } else if (distance > 0.1 && distance <= 1) {
+                        eta = "2 mins";
+                    } else {
+                        const avgSpeed = bus.speed ? parseFloat(bus.speed) : 50;
+                        const etaInMinutes = Math.round((distance / avgSpeed) * 60);
+                        eta = `${etaInMinutes} mins`;
+                    }
                 }
-                 else {
-                    const avgSpeed = bus.speed ? parseFloat(bus.speed) : 50;
-                    const etaInMinutes = Math.round((distance / avgSpeed) * 60);
-                    eta = `${etaInMinutes} mins`;
-
+                return { ...bus, distance, eta };
+            };
+    
+            const relevantWords = Object.values(locationDetails)
+                .join(' ')
+                .toLowerCase()
+                .replace(/,/g, '')
+                .split(/\s+/);
+    
+            const filtered = buses.filter((bus) => {
+                if (Array.isArray(bus.major_cities)) {
+                    const citiesArray = bus.major_cities.flatMap(city =>
+                        city.split(',').map(cityName => cityName.trim().toLowerCase())
+                    );
+    
+                    return relevantWords.some(word => citiesArray.includes(word));
                 }
-            }
-            return { ...bus, distance, eta };
-        };
-
-        const relevantWords = Object.values(locationDetails)
-            .join(' ')
-            .toLowerCase()
-            .replace(/,/g, '')
-            .split(/\s+/);
-
-        const filtered = buses.filter((bus) => {
-            if (Array.isArray(bus.major_cities)) {
-                const citiesArray = bus.major_cities.flatMap(city =>
-                    city.split(',').map(cityName => cityName.trim().toLowerCase())
-                );
-
-                return relevantWords.some(word => citiesArray.includes(word));
-            }
-            return false;
-        });
-
-        const busesWithDistanceAndETA = filtered.map(calculateDistanceAndETA);
-
-        const sorted = busesWithDistanceAndETA.sort((a, b) => {
-            if (a.distance === null) return 1;
-            if (b.distance === null) return -1;
-            return (a.distance || Infinity) - (b.distance || Infinity); // Ensure null distances are sorted to the end
-        });
-
-        setFilteredBuses(sorted);
-    }
-}, [locationDetails, userLocation, buses]);
-
+                return false;
+            });
+    
+            const busesWithDistanceAndETA = filtered.map(calculateDistanceAndETA);
+    
+            const sorted = busesWithDistanceAndETA.sort((a, b) => {
+                if (a.distance === null) return 1;
+                if (b.distance === null) return -1;
+                return (a.distance || Infinity) - (b.distance || Infinity);
+            });
+    
+            setFilteredBuses(sorted);
+    
+            // ✅ New Logic Added Here
+            const userCoords = {
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude,
+            };
+    
+            const updatedBuses = filtered
+                .map((bus) => {
+                    if (bus.current_location?.latitude && bus.current_location?.longitude) {
+                        const busCoords = {
+                            latitude: bus.current_location.latitude,
+                            longitude: bus.current_location.longitude,
+                        };
+                        // Calculate distance using haversine
+                        const distance = haversine(userCoords, busCoords) / 1000; // Convert meters to KM
+                        return { ...bus, distance };
+                    }
+                    return bus;
+                })
+                .filter(
+                    (bus) =>
+                        bus.distance !== undefined &&
+                        bus.distance > 0.05 && // Remove buses within 50m
+                        bus.occupancy !== 'not available'
+                )
+                .sort((a, b) => a.distance - b.distance); // Sort by nearest distance
+    
+            setFilteredBuses(updatedBuses);
+        }
+    }, [locationDetails, userLocation, buses]);
+    
     const renderBusItem = ({ item }) => {
         const seatsTaken = seatCountsByBusId[item.id] ? Number(seatCountsByBusId[item.id]) : 0;
         let availableSeats = Math.max(0, 50 - seatsTaken);
